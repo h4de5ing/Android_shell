@@ -1,0 +1,5 @@
+<resources>
+    <string name="app_name">Shell2</string>
+    <string name="title_initialcommand_preference">初始命令</string>
+    <string name="summary_initialcommand_preference">启动 设备 时自动执行的命令</string>
+</resources>

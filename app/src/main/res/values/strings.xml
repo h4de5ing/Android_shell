@@ -1,0 +1,5 @@
+<resources>
+    <string name="app_name">Shell2</string>
+    <string name="title_initialcommand_preference">Initial command</string>
+    <string name="summary_initialcommand_preference">Sent to the shell when device boot.</string>
+</resources>

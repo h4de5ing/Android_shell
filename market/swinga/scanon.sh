@@ -1,0 +1,1 @@
+echo 10 >/dev/gpio_ctl_drv
