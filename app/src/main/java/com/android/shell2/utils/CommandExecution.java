@@ -19,6 +19,15 @@ public class CommandExecution {
         public int result = -1;
         public String errorMsg = "";
         public String successMsg = "";
+
+        @Override
+        public String toString() {
+            return "执行结果:{" +
+                    "result=" + result +
+                    ", errorMsg='" + errorMsg + '\'' +
+                    ", successMsg='" + successMsg + '\'' +
+                    '}';
+        }
     }
 
     /**

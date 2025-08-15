@@ -4,18 +4,18 @@ plugins {
 }
 
 android {
-    compileSdk 34
-
+    compileSdk 36
+    namespace 'com.android.shell2'
     defaultConfig {
         applicationId "com.android.shell2"
         minSdk 23
-        targetSdk 34
+        targetSdk 36
         versionCode 1
         versionName "1.0"
     }
     signingConfigs {
         sign {
-            storeFile file("D:\\Android12SignerGUI\\SignFiles\\Q865M_Q115M_android11\\platform.jks")
+            storeFile file("D:\\Android12SignerGUI\\SignFiles\\NewPublic\\platform.jks")
             storePassword('android')
             keyAlias('android')
             keyPassword('android')
@@ -39,12 +39,10 @@ android {
         sourceCompatibility JavaVersion.VERSION_1_8
         targetCompatibility JavaVersion.VERSION_1_8
     }
-    kotlinOptions {
-        jvmTarget = '1.8'
-    }
-    namespace 'com.android.shell2'
+    kotlinOptions { jvmTarget = '1.8' }
+    buildFeatures { buildConfig true }
 }
 dependencies {
-//    compileOnly files('libs/classes.jar')
-    implementation 'com.github.h4de5ing.base:base:1.0-20230810'
+    compileOnly files('libs/classes.jar')
+    implementation 'com.github.h4de5ing.base:base:1.0-20250723'
 }
