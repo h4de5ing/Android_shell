@@ -1,6 +1,7 @@
 package com.android.shell2
 
 import android.Manifest
+import android.annotation.SuppressLint
 import android.app.Activity
 import android.content.Intent
 import android.content.pm.PackageManager
@@ -19,6 +20,7 @@ import com.android.shell2.services.ShellService
 import com.android.shell2.utils.CommandExecution
 import java.util.Locale
 
+@SuppressLint("SetTextI18n")
 class MainActivity : Activity() {
     private var tv: TextView? = null
     private var input: EditText? = null
