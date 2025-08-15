@@ -9,6 +9,8 @@ TODO
 5.最近执行命令缓存
 实现方式做成lib，方便一键配置
 
+增加 DEX执行
+
 ```
 安装apk
 sh -c "$(curl -fsSL http://192.168.1.106/installapk.sh)" -c "$(echo http://192.168.1.106/apk/h.apk)"
