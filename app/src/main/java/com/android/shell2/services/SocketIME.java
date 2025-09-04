@@ -8,35 +8,27 @@ import android.view.inputmethod.CursorAnchorInfo;
 import android.view.inputmethod.EditorInfo;
 import android.view.inputmethod.InputConnection;
 
-import java.io.DataOutputStream;
-import java.io.OutputStream;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.nio.charset.StandardCharsets;
 
 public class SocketIME extends InputMethodService {
-    private OutputStream mOutputStream = null;
-    private DataOutputStream mWriter = null;
     private Thread mServerThread = null;
     private NetworkThread mNetworkThread = null;
     private ServerSocket serverSocket = null;
-    private static Socket socket = null;
 
-    // 添加一个标志来跟踪服务是否已初始化
     private boolean isServiceInitialized = false;
     private Handler mHandler;
+    private final boolean isServerRunning = true;
 
     @Override
     public void onCreate() {
-        super.onCreate(); // 确保调用父类方法
+        super.onCreate();
         Log.d("tag", "SocketIME onCreate");
         mHandler = new Handler();
-        // 初始化服务标志
         isServiceInitialized = true;
-        // 启动网络线程
         mNetworkThread = new NetworkThread();
         mNetworkThread.start();
-        // 启动Socket服务器线程
         startServerThread();
     }
 
@@ -46,53 +38,47 @@ public class SocketIME extends InputMethodService {
         }
 
         mServerThread = new Thread(() -> {
-            try {
-                serverSocket = new ServerSocket(8888);
-                Log.d("tag", "SocketIME >>>>>>ServerThread connect success<<<<<<");
-                var buffer = new byte[1024];
-                while (true) {
-                    socket = serverSocket.accept();
-                    Log.d("tag", "SocketIME >>>>>>Client connect success<<<<<<");
-                    mOutputStream = socket.getOutputStream();
-                    mWriter = new DataOutputStream(mOutputStream);
-
-                    // 设置网络线程的Socket
-                    mNetworkThread.setSocket(socket);
-                    var inputStream = socket.getInputStream();
-                    int read;
-                    while ((read = inputStream.read(buffer)) != -1) {
-                        if (read > 0) {
-                            Log.d("tag", "SocketIME >>>>>>read data<<<<<<" + new String(buffer, 0, read));
-                            handleReceivedData(buffer, read);
-                        }
+            while (isServerRunning) {
+                try (ServerSocket serverSocket = new ServerSocket(8888)) {
+                    Log.d("tag", "SocketIME >>>>>>ServerThread started on port 8888<<<<<<");
+                    while (isServerRunning) {
+                        Socket clientSocket = serverSocket.accept();
+                        Log.d("tag", "SocketIME >>>>>>Client connected<<<<<<");
+                        new Thread(() -> handleClient(clientSocket)).start();
                     }
-                }
-            } catch (Exception e) {
-                Log.e("tag", "SocketIME server error", e);
-                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
-                    switchToNextInputMethod(false);
+                } catch (Exception e) {
+                    Log.e("tag", "Server socket error, will retry in 3s", e);
+                    try {
+                        Thread.sleep(30);
+                    } catch (InterruptedException ignored) {
+                        break;
+                    }
                 }
             }
         });
-
-        mServerThread.start(); // 确保线程启动
+        mServerThread.start();
     }
 
-    private void handleReceivedData(byte[] buffer, int length) {
-        // 在主线程中处理UI更新
-        if (mHandler != null) {
-            try {
-                mHandler.post(() -> {
-                    String text = new String(buffer, 0, length, StandardCharsets.UTF_8);
-                    Log.e("tag", "handleReceivedData=" + text);
-                    InputConnection ic = getCurrentInputConnection();
-                    if (ic != null) {
-                        ic.commitText(text, 1);
-                    }
-                });
-            } catch (Exception e) {
-                Log.e("tag", "Error handling received data", e);
+    private void handleClient(Socket clientSocket) {
+        try (clientSocket; var inputStream = clientSocket.getInputStream()) {
+            mNetworkThread.setSocket(clientSocket);
+            byte[] buffer = new byte[1024];
+            int read;
+            while ((read = inputStream.read(buffer)) != -1) {
+                if (read > 0) {
+                    String text = new String(buffer, 0, read, StandardCharsets.UTF_8);
+                    Log.d("tag", "SocketIME received: " + text);
+                    mHandler.post(() -> {
+                        InputConnection ic = getCurrentInputConnection();
+                        if (ic != null) ic.commitText(text, 1);
+                    });
+                }
             }
+        } catch (Exception e) {
+            Log.e("tag", "Client handler error", e);
+        } finally {
+            Log.d("tag", "Client disconnected");
+            mNetworkThread.setSocket(null);
         }
     }
 
@@ -100,8 +86,6 @@ public class SocketIME extends InputMethodService {
     public void onDestroy() {
         super.onDestroy();
         isServiceInitialized = false;
-
-        // 停止网络线程
         if (mNetworkThread != null) {
             mNetworkThread.shutdown();
             mNetworkThread = null;
@@ -130,7 +114,6 @@ public class SocketIME extends InputMethodService {
         super.onStartInput(info, restarting);
         if (isServiceInitialized && mNetworkThread != null) {
             try {
-                // 使用网络线程发送数据
                 mNetworkThread.addTask(new NetworkThread.NetworkTask(NetworkThread.NetworkTask.TYPE_WRITE_INT, MESSAGE_TYPE_START));
                 mNetworkThread.addTask(new NetworkThread.NetworkTask(NetworkThread.NetworkTask.TYPE_WRITE_INT, info.inputType));
 
@@ -160,7 +143,6 @@ public class SocketIME extends InputMethodService {
         if (isServiceInitialized && mNetworkThread != null) {
             try {
                 mNetworkThread.addTask(new NetworkThread.NetworkTask(NetworkThread.NetworkTask.TYPE_WRITE_INT, MESSAGE_TYPE_UPDATE_CURSOR));
-
                 var selectionStart = cursorAnchorInfo.getSelectionStart();
                 var rect = cursorAnchorInfo.getCharacterBounds(selectionStart);
                 if (rect != null) {
@@ -180,7 +162,6 @@ public class SocketIME extends InputMethodService {
         super.onFinishInput();
         if (isServiceInitialized && mNetworkThread != null) {
             try {
-                // 使用网络线程发送停止消息，避免在主线程中执行网络操作
                 mNetworkThread.addTask(new NetworkThread.NetworkTask(NetworkThread.NetworkTask.TYPE_WRITE_INT, MESSAGE_TYPE_STOP));
             } catch (Exception e) {
                 Log.e("tag", "Error in onFinishInput", e);

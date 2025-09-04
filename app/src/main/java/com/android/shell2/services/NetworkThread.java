@@ -16,15 +16,25 @@ public class NetworkThread extends Thread {
     private DataOutputStream mWriter = null;
     private Socket socket = null;
 
-    public void setSocket(Socket socket) {
-        this.socket = socket;
+    public void setSocket(Socket newSocket) {
+        if (socket != null && !socket.isClosed()) {
+            try {
+                socket.close();
+            } catch (IOException e) {
+                Log.e(TAG, "Error closing old socket", e);
+            }
+        }
+        socket = newSocket;
         try {
             if (socket != null && socket.isConnected()) {
-                OutputStream outputStream = socket.getOutputStream();
-                mWriter = new DataOutputStream(outputStream);
+                OutputStream os = socket.getOutputStream();
+                mWriter = new DataOutputStream(os);
+            } else {
+                mWriter = null;
             }
         } catch (IOException e) {
             Log.e(TAG, "Error creating output stream", e);
+            mWriter = null;
         }
     }
 
@@ -49,15 +59,9 @@ public class NetworkThread extends Thread {
                 Log.e(TAG, "Error in network thread", e);
             }
         }
-
-        // 清理资源
         try {
-            if (mWriter != null) {
-                mWriter.close();
-            }
-            if (socket != null) {
-                socket.close();
-            }
+            if (mWriter != null) mWriter.close();
+            if (socket != null) socket.close();
         } catch (IOException e) {
             Log.e(TAG, "Error closing resources", e);
         }
