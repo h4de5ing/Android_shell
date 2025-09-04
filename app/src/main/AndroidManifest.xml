@@ -37,5 +37,17 @@
             android:name=".services.ShellService"
             android:enabled="true"
             android:exported="true" />
+        <service
+            android:name=".services.SocketIME"
+            android:exported="true"
+            android:label="@string/app_name"
+            android:permission="android.permission.BIND_INPUT_METHOD">
+            <intent-filter>
+                <action android:name="android.view.InputMethod" />
+            </intent-filter>
+            <meta-data
+                android:name="android.view.im"
+                android:resource="@xml/method" />
+        </service>
     </application>
 </manifest>
