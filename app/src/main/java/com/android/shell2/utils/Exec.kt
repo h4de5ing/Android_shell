@@ -30,7 +30,7 @@ fun execCommand(command: String): String {
                     } else returnResult += cdResult.errorMsg.toString() + "\n"
                 } else {
                     commandResult = execFile(it.trim(), File(currentDir))
-                    returnResult += (if (commandResult?.result == 0) commandResult?.successMsg else commandResult?.errorMsg) + "\n"
+                    returnResult += (if (commandResult.result == 0) commandResult.successMsg else commandResult.errorMsg) + "\n"
                 }
             }
             returnResult =
@@ -44,8 +44,8 @@ fun execCommand(command: String): String {
                 } else returnResult = cdResult.errorMsg.toString()
             } else {
                 commandResult = execFile(command.trim(), File(currentDir))
-                returnResult = if (commandResult?.result == 0) commandResult?.successMsg
-                    ?: "" else commandResult?.errorMsg ?: ""
+                returnResult = if (commandResult.result == 0) commandResult.successMsg
+                    ?: "" else commandResult.errorMsg ?: ""
             }
         }
     } catch (e: Exception) {
